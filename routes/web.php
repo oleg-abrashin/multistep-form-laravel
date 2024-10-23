@@ -1,7 +1,6 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-
 use App\Http\Controllers\RegistrationController;
 
 Route::get('register', [RegistrationController::class, 'showStep1'])->name('register.step1');

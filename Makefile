@@ -1,19 +1,29 @@
-# Start and build containers, install dependencies, run migrations, and build assets
+# Start and build containers, install dependencies, run migrations, build assets, and open the browser
 start:
 	@echo "Starting the application..."
 	@make setup-alias
 	@make copy-env
-	@make install
-	@make generate-key
+	@make check-dependencies
+	@make check-key
 	@make migrate
 	@make build-assets
-	@echo "Application started successfully. Visit http://0.0.0.0/"
+	@make check-services
+	@make open-browser
+	@echo "Application started successfully."
 
-# Install dependencies using Sail
-install:
+# Check if composer and npm dependencies are installed
+check-dependencies:
+	@if [ ! -d "./vendor" ]; then \
+		./vendor/bin/sail composer install; \
+	else \
+		echo "Composer dependencies are already installed."; \
+	fi
+	@if [ ! -d "./node_modules" ]; then \
+		./vendor/bin/sail npm install; \
+	else \
+		echo "NPM dependencies are already installed."; \
+	fi
 	@./vendor/bin/sail up -d --build
-	@./vendor/bin/sail composer install
-	@./vendor/bin/sail npm install
 
 # Copy .env.example to .env if it doesn't exist
 copy-env:
@@ -22,9 +32,14 @@ copy-env:
 		cp .env.example .env; \
 	fi
 
-# Generate Laravel application key
-generate-key:
-	@./vendor/bin/sail artisan key:generate
+# Check if Laravel key exists, generate one if it doesn't
+check-key:
+	@if ! grep -q "APP_KEY=" .env; then \
+		echo "Generating application key"; \
+		./vendor/bin/sail artisan key:generate; \
+	else \
+		echo "Application key already exists."; \
+	fi
 
 # Run migrations
 migrate:
@@ -33,6 +48,21 @@ migrate:
 # Build frontend assets
 build-assets:
 	@./vendor/bin/sail npm run build
+
+# Check if both Laravel and npm (frontend) are running
+check-services:
+	@./vendor/bin/sail artisan up || (echo "Laravel failed to start" && exit 1)
+	@curl -s http://0.0.0.0:5173 || (echo "NPM frontend failed to start" && exit 1)
+
+# Automatically open the browser to the frontend URL
+open-browser:
+	@if which xdg-open > /dev/null; then \
+		xdg-open http://0.0.0.0/register; \
+	elif which open > /dev/null; then \
+		open http://0.0.0.0/register; \
+	else \
+		echo "Could not detect the web browser to open"; \
+	fi
 
 # Run tests
 test:
