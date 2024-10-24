@@ -3,8 +3,8 @@ start:
 	@echo "Starting the application..."
 	@make setup-alias
 	@make copy-env
-	@make install-dependencies
 	@make ensure-sail-running
+	@make install-dependencies
 	@make check-key  # Ensure the key is generated before proceeding
 	@make fix-permissions
 	@make create-missing-directories
