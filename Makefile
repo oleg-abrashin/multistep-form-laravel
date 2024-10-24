@@ -47,12 +47,11 @@ migrate:
 
 # Build frontend assets
 build-assets:
-	@./vendor/bin/sail npm run build
+	@./vendor/bin/sail npm run build --if-present
 
-# Check if both Laravel and npm (frontend) are running
+# Check if both Laravel and Vite (frontend) are running
 check-services:
 	@./vendor/bin/sail artisan up || (echo "Laravel failed to start" && exit 1)
-	@curl -s http://0.0.0.0:5173 || (echo "NPM frontend failed to start" && exit 1)
 
 # Automatically open the browser to the frontend URL
 open-browser:

@@ -10,7 +10,6 @@
 <nav class="navbar navbar-expand-lg navbar-light bg-light">
     <a class="navbar-brand" href="#">StreamPlus</a>
 </nav>
-
 <main class="py-4">
     @yield('content')
 </main>
