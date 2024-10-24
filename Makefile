@@ -3,7 +3,7 @@ start:
 	@echo "Starting the application..."
 	@make setup-alias
 	@make copy-env
-	@make check-dependencies
+	@make install-dependencies
 	@make ensure-sail-running
 	@make check-key  # Ensure the key is generated before proceeding
 	@make fix-permissions
@@ -14,17 +14,19 @@ start:
 	@make open-browser
 	@echo "Application started successfully."
 
-# Check if composer and npm dependencies are installed
-check-dependencies:
+# Install composer and npm dependencies, including Sail
+install-dependencies:
 	@if [ ! -d "./vendor" ]; then \
-		./vendor/bin/sail composer install; \
-	else \
-		echo "Composer dependencies are already installed."; \
+		echo "Installing Composer dependencies..."; \
+		composer install; \
+	fi
+	@if [ ! -f ./vendor/bin/sail ]; then \
+		echo "Installing Laravel Sail..."; \
+		composer require laravel/sail --dev; \
 	fi
 	@if [ ! -d "./node_modules" ]; then \
+		echo "Installing NPM dependencies..."; \
 		./vendor/bin/sail npm install; \
-	else \
-		echo "NPM dependencies are already installed."; \
 	fi
 
 # Attempt to ensure Sail is running
