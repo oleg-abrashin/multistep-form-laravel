@@ -1,10 +1,13 @@
-# Start and build containers, install dependencies, run migrations, build assets, and open the browser
+# Start and build containers, install dependencies, run migrations, build assets, fix permissions, and open the browser
 start:
 	@echo "Starting the application..."
 	@make setup-alias
 	@make copy-env
 	@make check-dependencies
-	@make check-key
+	@make ensure-sail-running
+	@make check-key  # Ensure the key is generated before proceeding
+	@make fix-permissions
+	@make create-missing-directories
 	@make migrate
 	@make build-assets
 	@make check-services
@@ -23,7 +26,15 @@ check-dependencies:
 	else \
 		echo "NPM dependencies are already installed."; \
 	fi
-	@./vendor/bin/sail up -d --build
+
+# Attempt to ensure Sail is running
+ensure-sail-running:
+	@if ! docker ps | grep -q 'laravel.test'; then \
+		echo "Sail is not running. Attempting to start Sail..."; \
+		./vendor/bin/sail up -d || (echo "Failed to start Sail. Please try './vendor/bin/sail up' manually." && exit 1); \
+	else \
+		echo "Sail is running."; \
+	fi
 
 # Copy .env.example to .env if it doesn't exist
 copy-env:
@@ -32,14 +43,27 @@ copy-env:
 		cp .env.example .env; \
 	fi
 
-# Check if Laravel key exists, generate one if it doesn't
+# Check if Laravel key exists, generate one if it's missing or empty
 check-key:
-	@if ! grep -q "APP_KEY=" .env; then \
+	@if ! grep -q "APP_KEY=" .env || grep -q "APP_KEY=$$" .env; then \
 		echo "Generating application key"; \
 		./vendor/bin/sail artisan key:generate; \
 	else \
 		echo "Application key already exists."; \
 	fi
+
+# Fix permissions for storage and cache directories
+fix-permissions:
+	@echo "Fixing storage and cache directory permissions..."
+	@./vendor/bin/sail exec laravel.test chmod -R 777 storage bootstrap/cache
+
+# Create missing directories for storage and cache
+create-missing-directories:
+	@echo "Creating missing storage and cache directories..."
+	@./vendor/bin/sail exec laravel.test mkdir -p storage/framework/cache/data
+	@./vendor/bin/sail exec laravel.test mkdir -p storage/framework/sessions
+	@./vendor/bin/sail exec laravel.test mkdir -p storage/framework/views
+	@./vendor/bin/sail exec laravel.test mkdir -p bootstrap/cache
 
 # Run migrations
 migrate:
